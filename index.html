@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深井建筑团队 - 项目日志</title>
+    <style>
+        /* ========== 全局 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #b8b8b8;
+            font-family: 'Courier New', Courier, monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 噪点背景 */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" opacity="0.05"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4"/></filter><rect width="100" height="100" filter="url(%23n)"/></svg>');
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background-color: #111;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        h1, h2, h3 {
+            font-weight: normal;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 2.2em;
+            color: #9e2b2b;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 8px rgba(158, 43, 43, 0.5);
+        }
+
+        h2 {
+            font-size: 1.3em;
+            color: #8a8a8a;
+            margin-bottom: 15px;
+        }
+
+        a {
+            color: #6b8e6b;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #9e2b2b;
+        }
+
+        .hidden-link {
+            color: #111;
+            text-decoration: none;
+            cursor: default;
+        }
+
+        .hidden-link:hover {
+            color: #9e2b2b;
+            cursor: pointer;
+        }
+
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="password"] {
+            background-color: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            color: #b8b8b8;
+            padding: 10px 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1em;
+            letter-spacing: 1px;
+            flex: 1;
+        }
+
+        button {
+            background-color: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            color: #b8b8b8;
+            padding: 10px 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1em;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #2a2a2a;
+            border-color: #9e2b2b;
+            color: #9e2b2b;
+        }
+
+        .error-msg {
+            color: #9e2b2b;
+            font-size: 0.9em;
+            min-height: 1.2em;
+        }
+
+        .log-entry {
+            margin-bottom: 30px;
+            padding-left: 20px;
+            border-left: 2px solid #3a3a3a;
+        }
+
+        .log-entry .date {
+            color: #6b8e6b;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .log-entry .author {
+            color: #8a8a8a;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .log-entry p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .member-list {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #0d0d0d;
+            border: 1px solid #2a2a2a;
+        }
+
+        .member-list h3 {
+            color: #6b8e6b;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .member {
+            padding: 3px 0;
+            border-bottom: 1px dotted #2a2a2a;
+        }
+
+        .member.missing {
+            color: #9e2b2b;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 0.75em;
+            color: #4a4a4a;
+            text-align: center;
+        }
+
+        /* ========== 首页特有 ========== */
+        #home .well {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to bottom, #1a1a1a, #0a0a0a);
+            border: 1px solid #3a3a3a;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4a4a4a;
+            font-size: 0.8em;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #home .well::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #1a1a1a 20%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        /* ========== 地下室页面 ========== */
+        #basement {
+            background-color: #000;
+            border: none;
+            box-shadow: none;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+        }
+
+        #basement.active {
+            display: flex;
+        }
+
+        #basement h1 {
+            color: #fff;
+            border: none;
+            text-shadow: none;
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+
+        #basement .input-group {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #basement input {
+            background-color: #000;
+            border: 1px solid #fff;
+            color: #fff;
+        }
+
+        #basement button {
+            background-color: #000;
+            border: 1px solid #fff;
+            color: #fff;
+        }
+
+        #basement button:hover {
+            background-color: #fff;
+            color: #000;
+        }
+
+        #basement .basement-msg {
+            margin-top: 20px;
+            color: #fff;
+            min-height: 40px;
+        }
+
+        /* ========== DOWN 页面 ========== */
+        #down .spectrum {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 120px;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+
+        #down .spectrum .bar {
+            width: 8px;
+            background-color: #6b8e6b;
+            transition: height 0.2s;
+        }
+
+        #down .coord {
+            color: #9e2b2b;
+            font-size: 1.2em;
+            letter-spacing: 3px;
+            margin: 10px 0;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #down .coord.visible {
+            opacity: 1;
+        }
+
+        /* ========== TRUTH 页面 ========== */
+        #truth .map-placeholder {
+            width: 100%;
+            height: 300px;
+            background-color: #0d0d0d;
+            border: 1px solid #3a3a3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        #truth .map-placeholder .marker {
+            position: absolute;
+            top: 45%;
+            left: 62%;
+            width: 12px;
+            height: 12px;
+            background-color: #9e2b2b;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #9e2b2b;
+        }
+
+        #truth .map-placeholder .label {
+            color: #4a4a4a;
+            font-size: 0.8em;
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .page {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+
+        /* 闪烁光标 */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .blink {
+            animation: blink 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- 别相信地图。地图是我们画的。 -->
+
+    <!-- ==================== 首页 ==================== -->
+    <div id="home" class="page active">
+        <h1>深井建筑团队<br>项目日志</h1>
+        <p style="color:#6b8e6b;">[最后更新：2017-03-12]</p>
+        
+        <div class="well">
+            <span>中心竖井 - 概念图</span>
+        </div>
+        
+        <p>欢迎回来，调查员。请输入访问码以解锁团队日志。</p>
+        
+        <div class="input-group">
+            <input type="password" id="accessCode" placeholder="访问码" maxlength="10">
+            <button onclick="checkAccessCode()">进入档案</button>
+        </div>
+        <div class="error-msg" id="accessError"></div>
+        
+        <p style="font-size:0.8em; color:#4a4a4a;">本项目由深井建筑团队发起，2016年。所有日志已停止更新。</p>
+        
+        <div class="footer">
+            © 2016 深井建筑团队 · <a href="#basement" class="hidden-link">·</a>
+        </div>
+    </div>
+
+    <!-- ==================== 日志页 ==================== -->
+    <div id="logs" class="page">
+        <h1>团队成员日志</h1>
+        <p style="color:#6b8e6b; margin-bottom:20px;">访问码验证成功。以下为可恢复的日志条目。</p>
+        
+        <div class="log-entry">
+            <div class="date">2016-08-14</div>
+            <div class="author">作者：建筑师_零</div>
+            <p>今天我们开始挖掘中央竖井。计划深度64格，用作地下城市的主要通风井。这里的岩石很坚硬，但大家都很有信心。这个项目会成为我们最伟大的作品。</p>
+        </div>
+        
+        <div class="log-entry">
+            <div class="date">2016-11-02</div>
+            <div class="author">作者：矿工_阿七</div>
+            <p>我们在竖井底部发现了一些奇怪的雕刻。像是眼睛，但比任何人类的手艺都要精细。队长说可能是以前某个古老文明的遗迹。我们决定保留它们，并融入城市设计。</p>
+        </div>
+        
+        <div class="log-entry">
+            <div class="date">2017-01-19</div>
+            <div class="author">作者：建筑师_零</div>
+            <p>城市开始自己生长。我们明明没有建过那些重复的公寓房间。今天早上，我数了一下走廊上的门，有20扇。昨天是19扇。其他人也看到了，但没人愿意第一个说出来。</p>
+        </div>
+        
+        <div class="log-entry">
+            <div class="date">2017-02-28</div>
+            <div class="author">作者：矿工_阿七</div>
+            <p>有人不再离开游戏了。他的ID还挂在服务器列表里，但人不见了。我们搜索了整个城市，只在一面镜子里看到了他的倒影。镜子后面有通道，但我们不敢进去。</p>
+        </div>
+        
+        <div class="log-entry">
+            <div class="date">2017-03-12</div>
+            <div class="author">作者：未知</div>
+            <p>不要相信影子。不要相信地图。旧城入口在南侧第七扇门后<a href="#down" style="color:#b8b8b8; text-decoration:none;">。</a></p>
+        </div>
+        
+        <div class="member-list">
+            <h3>团队成员状态</h3>
+            <div class="member">建筑师_零 —— 失踪</div>
+            <div class="member">矿工_阿七 —— 失踪</div>
+            <div class="member">红石_老K —— 失踪</div>
+            <div class="member">画师_小月 —— 失踪</div>
+            <div class="member missing" id="newMember" style="display:none;"></div>
+        </div>
+        
+        <div class="footer">
+            <a href="#home">← 返回首页</a>
+        </div>
+    </div>
+
+    <!-- ==================== 地下室页面 ==================== -->
+    <div id="basement" class="page">
+        <h1>你叫什么名字？</h1>
+        <div class="input-group">
+            <input type="text" id="playerName" placeholder="输入你的 MC ID" maxlength="30">
+            <button onclick="submitName()">确认</button>
+        </div>
+        <div class="basement-msg" id="basementMsg"></div>
+        <div class="footer" style="margin-top:40px;">
+            <a href="#home" style="color:#fff;">← 返回</a>
+        </div>
+    </div>
+
+    <!-- ==================== DOWN 页面 ==================== -->
+    <div id="down" class="page">
+        <h1>DOWN</h1>
+        <p style="color:#6b8e6b;">音频文件：hollow_down.wav</p>
+        <div class="spectrum" id="spectrum" onclick="revealCoords()">
+            <!-- 由JS生成频谱条 -->
+        </div>
+        <p style="font-size:0.8em; color:#4a4a4a;">点击频谱图进行分析</p>
+        <div class="coord" id="coords">(-320, 64, 120)</div>
+        <div class="footer">
+            <a href="#truth" class="hidden-link">第七扇门</a>
+        </div>
+    </div>
+
+    <!-- ==================== TRUTH 页面 ==================== -->
+    <div id="truth" class="page">
+        <h1>真相</h1>
+        <p style="color:#6b8e6b;">旧城地图 - 片段</p>
+        <div class="map-placeholder">
+            <span class="label">深层地图占位</span>
+            <div class="marker"></div>
+        </div>
+        <p>标记位置：<strong>第七扇门</strong></p>
+        <p style="font-size:0.8em; color:#4a4a4a;">坐标：(-320, 64, 120)</p>
+        <div class="footer">
+            <a href="#home">← 返回首页</a>
+        </div>
+    </div>
+
+    <script>
+        // ========== 页面路由 ==========
+        function showPage(hash) {
+            // 移除所有 active
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            let pageId = 'home';
+            if (hash && hash !== '#') {
+                pageId = hash.substring(1);
+            }
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('active');
+            } else {
+                document.getElementById('home').classList.add('active');
+            }
+        }
+
+        window.addEventListener('hashchange', () => {
+            showPage(window.location.hash);
+        });
+
+        // 初始加载
+        window.addEventListener('load', () => {
+            showPage(window.location.hash);
+            generateSpectrum();
+            loadSavedName();
+        });
+
+        // ========== 访问码验证 ==========
+        function checkAccessCode() {
+            const code = document.getElementById('accessCode').value.trim();
+            const errorEl = document.getElementById('accessError');
+            if (code === '472') {
+                errorEl.textContent = '';
+                window.location.hash = '#logs';
+            } else {
+                errorEl.textContent = '访问码错误。请重新输入。';
+                document.getElementById('accessCode').value = '';
+            }
+        }
+
+        // ========== 地下室输入名字 ==========
+        function submitName() {
+            const name = document.getElementById('playerName').value.trim();
+            const msg = document.getElementById('basementMsg');
+            if (name) {
+                localStorage.setItem('hollow_player_name', name);
+                msg.innerHTML = '欢迎，' + name + '。<br>我们一直在等你。<br>请回到你最初出现的地方，向下挖。';
+                // 更新日志页成员列表
+                const memberDiv = document.getElementById('newMember');
+                memberDiv.textContent = name + ' —— 失踪';
+                memberDiv.style.display = 'block';
+            } else {
+                msg.textContent = '请输入名字。';
+            }
+        }
+
+        function loadSavedName() {
+            const savedName = localStorage.getItem('hollow_player_name');
+            if (savedName) {
+                document.getElementById('playerName').value = savedName;
+                const memberDiv = document.getElementById('newMember');
+                memberDiv.textContent = savedName + ' —— 失踪';
+                memberDiv.style.display = 'block';
+            }
+        }
+
+        // ========== DOWN 页面频谱生成 ==========
+        function generateSpectrum() {
+            const spectrum = document.getElementById('spectrum');
+            if (!spectrum) return;
+            spectrum.innerHTML = '';
+            const barCount = 60;
+            for (let i = 0; i < barCount; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                const height = Math.floor(Math.random() * 100) + 20;
+                bar.style.height = height + 'px';
+                spectrum.appendChild(bar);
+            }
+            // 隐藏坐标
+            document.getElementById('coords').classList.remove('visible');
+        }
+
+        function revealCoords() {
+            const coords = document.getElementById('coords');
+            coords.classList.add('visible');
+            // 重新生成频谱条，模拟分析
+            generateSpectrum();
+        }
+    </script>
+</body>
+</html>
