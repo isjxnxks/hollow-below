@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深井建筑团队 - 项目日志</title>
+    <style>
+        /* ========== 全局样式 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #b8b8b8;
+            font-family: 'Courier New', Courier, monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" opacity="0.05"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4"/></filter><rect width="100" height="100" filter="url(%23n)"/></svg>');
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background-color: #111;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        h1, h2, h3 {
+            font-weight: normal;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 2.2em;
+            color: #9e2b2b;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 8px rgba(158, 43, 43, 0.5);
+        }
+
+        h2 {
+            font-size: 1.3em;
+            color: #8a8a8a;
+            margin-bottom: 15px;
+        }
+
+        a {
+            color: #6b8e6b;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #9e2b2b;
+        }
+
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="password"] {
+            background-color: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            color: #b8b8b8;
+            padding: 10px 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1em;
+            letter-spacing: 1px;
+            flex: 1;
+        }
+
+        button {
+            background-color: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            color: #b8b8b8;
+            padding: 10px 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1em;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #2a2a2a;
+            border-color: #9e2b2b;
+            color: #9e2b2b;
+        }
+
+        .error-msg {
+            color: #9e2b2b;
+            font-size: 0.9em;
+            min-height: 1.2em;
+        }
+
+        .log-entry {
+            margin-bottom: 30px;
+            padding-left: 20px;
+            border-left: 2px solid #3a3a3a;
+        }
+
+        .log-entry .date {
+            color: #6b8e6b;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .log-entry .author {
+            color: #8a8a8a;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .log-entry p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .member-list {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #0d0d0d;
+            border: 1px solid #2a2a2a;
+        }
+
+        .member-list h3 {
+            color: #6b8e6b;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .member {
+            padding: 3px 0;
+            border-bottom: 1px dotted #2a2a2a;
+        }
+
+        .member.missing {
+            color: #9e2b2b;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 0.75em;
+            color: #4a4a4a;
+            text-align: center;
+        }
+
+        /* 首页特有 */
+        #home .well {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to bottom, #1a1a1a, #0a0a0a);
+            border: 1px solid #3a3a3a;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4a4a4a;
+            font-size: 0.8em;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #home .well::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #1a1a1a 20%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        /* 黑色页面 */
+        #below, #see {
+            background-color: #000;
+            border: none;
+            box-shadow: none;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+        }
+
+        #below.active, #see.active {
+            display: flex;
+        }
+
+        #below h1, #see h1 {
+            color: #fff;
+            border: none;
+            text-shadow: none;
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+
+        #below .input-group, #see .input-group {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #below input, #see input {
+            background-color: #000;
+            border: 1px solid #fff;
+            color: #fff;
+        }
+
+        #below button, #see button {
+            background-color: #000;
+            border: 1px solid #fff;
+            color: #fff;
+        }
+
+        #below button:hover, #see button:hover {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .msg {
+            margin-top: 20px;
+            color: #fff;
+            min-height: 40px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .page {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 别相信地图。地图是我们画的。 -->
+
+    <!-- ==================== 首页 ==================== -->
+    <div id="home" class="page active">
+        <h1>深井建筑团队<br>项目日志</h1>
+        <p style="color:#6b8e6b;">[最后更新：2023-11-10]</p>
+        
+        <div class="well">
+            <span>中心竖井 - 概念图</span>
+        </div>
+        
+        <p>欢迎回来，调查员。请输入访问码以解锁团队日志。</p>
+        
+        <div class="input-group">
+            <input type="password" id="accessCode" placeholder="访问码" maxlength="10">
+            <button onclick="checkAccessCode()">进入档案</button>
+        </div>
+        <div class="error-msg" id="accessError"></div>
+        
+        <p style="font-size:0.8em; color:#4a4a4a;">本项目由深井建筑团队发起，2016年。所有日志已停止更新。</p>
+        
+        <div class="footer">
+            © 2016 深井建筑团队
+        </div>
+    </div>
+
+    <!-- ==================== 日志页 ==================== -->
+    <div id="logs" class="page">
+        <h1>团队成员日志</h1>
+        <p style="color:#6b8e6b; margin-bottom:20px;">访问码验证成功。以下为可恢复的帖子。</p>
+
+        <div class="log-entry">
+            <div class="date">2023-11-01</div>
+            <div class="author">作者：建筑师_零</div>
+            <p>我们找到了那个入口。指南针没有骗我们。这里面比我们想象的大得多。一个地下村庄，还有一座火车站。我们决定分头探索。我去了火车站。</p>
+        </div>
+
+        <div class="log-entry">
+            <div class="date">2023-11-03</div>
+            <div class="author">作者：矿工_阿七</div>
+            <p>火车站里有张纸条，是一串二进制。我算出来了，是 4。旅馆里也有，不过那个是凯撒加密。我猜是 7。还差最后一个，应该在亭子那里。</p>
+        </div>
+
+        <div class="log-entry">
+            <div class="date">2023-11-05</div>
+            <div class="author">作者：画师_小月</div>
+            <p>亭子里只有一个网盘链接。我下载了，里面全是乱码，但乱码里藏着 0 和 1。我提取出来了，是 2。所以我们有 4、7、2。这个密码能打开网站的什么？老 K 说他在网站输入了 472，看到了我们以前的日志。</p>
+        </div>
+
+        <div class="log-entry">
+            <div class="date">2023-11-07</div>
+            <div class="author">作者：红石_老K</div>
+            <p>472 解锁了日志，但我注意到日志下面多了一个留言板。我想试试输入我们刚才得到的数字，但不对。我猜留言板需要另一个代码，可能藏在第二层。我们准备进入第二层。如果你们看到这条，别跟来。</p>
+        </div>
+
+        <div class="log-entry">
+            <div class="date">2023-11-10</div>
+            <div class="author">作者：未知</div>
+            <p>他们在下面找到了神的眼睛。神不需要眼睛，神就是眼睛。你们已经看到了，就永远无法离开。留言板的代码是：<strong>HOLLOW</strong>。</p>
+        </div>
+
+        <div class="member-list">
+            <h3>团队成员状态</h3>
+            <div class="member">建筑师_零 —— 失踪</div>
+            <div class="member">矿工_阿七 —— 失踪</div>
+            <div class="member">红石_老K —— 失踪</div>
+            <div class="member">画师_小月 —— 失踪</div>
+            <div class="member missing" id="newMember" style="display:none;"></div>
+        </div>
+
+        <!-- 留言板 -->
+        <div style="margin-top:40px; padding:20px; background-color:#0d0d0d; border:1px solid #2a2a2a;">
+            <h3 style="color:#6b8e6b; margin-bottom:10px;">留言板</h3>
+            <p style="font-size:0.85em; color:#8a8a8a; margin-bottom:10px;">请输入验证代码。</p>
+            <div class="input-group">
+                <input type="text" id="boardCode" placeholder="输入代码" maxlength="20">
+                <button onclick="checkBoardCode()">提交</button>
+            </div>
+            <div class="error-msg" id="boardError"></div>
+        </div>
+
+        <div class="footer">
+            <a href="#home">← 返回首页</a>
+        </div>
+    </div>
+
+    <!-- ==================== BELOW 页面 ==================== -->
+    <div id="below" class="page">
+        <h1>你找到了正确的词</h1>
+        <p style="margin-bottom:20px;">现在回到你来的地方，按下井底的按钮，向下走。第三层是空的，但你会填满它。</p>
+        <p style="margin-bottom:30px; color:#8a8a8a;">——深井建筑团队（已失踪）</p>
+        
+        <div class="input-group">
+            <input type="text" id="belowCode" placeholder="输入新的代码" maxlength="30">
+            <button onclick="checkBelowCode()">确认</button>
+        </div>
+        <div class="msg" id="belowMsg"></div>
+        
+        <div class="footer" style="margin-top:40px;">
+            <a href="#logs" style="color:#fff;">← 返回日志</a>
+        </div>
+    </div>
+
+    <!-- ==================== SEE 页面 ==================== -->
+    <div id="see" class="page">
+        <h1>你看见了</h1>
+        <p style="margin-bottom:20px;">神也看见了你。四个人的意识留在了这里，他们是神的一部分。现在，轮到你了。</p>
+        <p style="margin-bottom:20px;">回到你最初出现的地方，向下挖。这次，没有人会阻止你。</p>
+        <p style="font-size:1.2em; color:#9e2b2b; letter-spacing:3px; margin-bottom:30px;">坐标：(0, 64, 0)</p>
+        <p style="font-size:0.9em; color:#8a8a8a;">你的禁令将在 13 分钟后解除。</p>
+        
+        <div class="footer" style="margin-top:40px;">
+            <a href="#home" style="color:#fff;">← 返回首页</a>
+        </div>
+    </div>
+
+    <script>
+        // ========== 页面路由 ==========
+        function showPage(hash) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            let pageId = 'home';
+            if (hash && hash !== '#') {
+                pageId = hash.substring(1);
+            }
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('active');
+            } else {
+                document.getElementById('home').classList.add('active');
+            }
+        }
+
+        window.addEventListener('hashchange', () => {
+            showPage(window.location.hash);
+            loadSavedName();
+        });
+
+        window.addEventListener('load', () => {
+            showPage(window.location.hash);
+            loadSavedName();
+        });
+
+        // ========== 访问码验证 ==========
+        function checkAccessCode() {
+            const code = document.getElementById('accessCode').value.trim();
+            const errorEl = document.getElementById('accessError');
+            if (code === '472') {
+                errorEl.textContent = '';
+                window.location.hash = '#logs';
+            } else {
+                errorEl.textContent = '访问码错误。请重新输入。';
+                document.getElementById('accessCode').value = '';
+            }
+        }
+
+        // ========== 留言板验证 ==========
+        function checkBoardCode() {
+            const code = document.getElementById('boardCode').value.trim();
+            const errorEl = document.getElementById('boardError');
+            if (code === 'HOLLOW') {
+                errorEl.textContent = '';
+                window.location.hash = '#below';
+            } else {
+                errorEl.textContent = '该帖子不存在';
+                document.getElementById('boardCode').value = '';
+            }
+        }
+
+        // ========== BELOW 页面验证 ==========
+        function checkBelowCode() {
+            const code = document.getElementById('belowCode').value.trim();
+            const msg = document.getElementById('belowMsg');
+            if (code === 'THEGODSEESYOU') {
+                msg.textContent = '';
+                window.location.hash = '#see';
+            } else {
+                msg.textContent = '你还没有看见。';
+                document.getElementById('belowCode').value = '';
+            }
+        }
+
+        // ========== 记忆名字 ==========
+        function loadSavedName() {
+            const savedName = localStorage.getItem('hollow_player_name');
+            if (savedName) {
+                const memberDiv = document.getElementById('newMember');
+                memberDiv.textContent = savedName + ' —— 失踪';
+                memberDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
